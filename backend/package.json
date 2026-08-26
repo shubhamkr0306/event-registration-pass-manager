@@ -1,0 +1,11 @@
+{
+  "name": "shnoor-event-manager-backend",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Backend API for Event Registration & Digital Pass Manager",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js"
+  }
+}

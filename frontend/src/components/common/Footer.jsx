@@ -8,7 +8,7 @@ export default function Footer() {
         <div className="flex items-center gap-2">
           <Ticket className="h-4 w-4 text-teal-600" />
           <span className="font-semibold text-slate-700 dark:text-slate-300">EventPass</span>
-          <span>© {new Date().getFullYear()} Shnoor International LLC.</span>
+          <span>© {new Date().getFullYear()} </span>
         </div>
         <p>Event Registration & Pass Manager</p>
       </div>

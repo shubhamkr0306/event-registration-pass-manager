@@ -1,9 +1,14 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider } from '@/context/AuthContext';
 
 // Layouts
 import MainLayout from '@/layouts/MainLayout';
 import DashboardLayout from '@/layouts/DashboardLayout';
+
+// Route Guards
+import AdminRoute from '@/components/common/AdminRoute';
+import OrganizerRoute from '@/components/common/OrganizerRoute';
 
 // Public & Auth Pages
 import HomePage from '@/pages/public/HomePage';
@@ -23,35 +28,57 @@ import LiveScannerPage from '@/pages/organizer/LiveScannerPage';
 import EventAttendeesPage from '@/pages/organizer/EventAttendeesPage';
 import EventAnalyticsPage from '@/pages/organizer/EventAnalyticsPage';
 
+// Admin Console Page
+import AdminPanelPage from '@/pages/admin/AdminPanelPage';
+
 export default function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        
-        {/* Public & Attendee Layout Routes */}
-        <Route element={<MainLayout />}>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/events" element={<EventsPage />} />
-          <Route path="/events/:id" element={<EventDetailsPage />} />
-          <Route path="/verify-pass" element={<VerifyPassPublicPage />} />
-          <Route path="/my-passes" element={<MyPassesPage />} />
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/register" element={<RegisterPage />} />
-        </Route>
+    <AuthProvider>
+      <BrowserRouter>
+        <Routes>
+          
+          {/* Public & Attendee Layout Routes */}
+          <Route element={<MainLayout />}>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/events" element={<EventsPage />} />
+            <Route path="/events/:id" element={<EventDetailsPage />} />
+            <Route path="/verify-pass" element={<VerifyPassPublicPage />} />
+            <Route path="/my-passes" element={<MyPassesPage />} />
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/register" element={<RegisterPage />} />
+            
+            {/* Protected Admin Console Route */}
+            <Route 
+              path="/admin" 
+              element={
+                <AdminRoute>
+                  <AdminPanelPage />
+                </AdminRoute>
+              } 
+            />
+          </Route>
 
-        {/* Organizer Console / Dashboard Layout Routes */}
-        <Route path="/dashboard" element={<DashboardLayout />}>
-          <Route index element={<DashboardOverviewPage />} />
-          <Route path="events" element={<ManageEventsPage />} />
-          <Route path="scanner" element={<LiveScannerPage />} />
-          <Route path="attendees" element={<EventAttendeesPage />} />
-          <Route path="analytics" element={<EventAnalyticsPage />} />
-        </Route>
+          {/* Organizer Console / Dashboard Layout Routes (Guarded by OrganizerRoute) */}
+          <Route 
+            path="/dashboard" 
+            element={
+              <OrganizerRoute>
+                <DashboardLayout />
+              </OrganizerRoute>
+            }
+          >
+            <Route index element={<DashboardOverviewPage />} />
+            <Route path="events" element={<ManageEventsPage />} />
+            <Route path="scanner" element={<LiveScannerPage />} />
+            <Route path="attendees" element={<EventAttendeesPage />} />
+            <Route path="analytics" element={<EventAnalyticsPage />} />
+          </Route>
 
-        {/* Fallback wildcard redirect */}
-        <Route path="*" element={<Navigate to="/" replace />} />
+          {/* Fallback wildcard redirect */}
+          <Route path="*" element={<Navigate to="/" replace />} />
 
-      </Routes>
-    </BrowserRouter>
+        </Routes>
+      </BrowserRouter>
+    </AuthProvider>
   );
 }

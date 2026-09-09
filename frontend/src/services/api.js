@@ -6,9 +6,17 @@ const resolveBaseUrl = () => {
   if (!envUrl) return 'http://localhost:5000/api/v1';
 
   let url = envUrl.trim();
-  if (!url.startsWith('http://') && !url.startsWith('https://')) {
+
+  // Extract host part to check if it's a bare service slug (e.g. 'eventpass-api-9ytc')
+  const cleanHost = url.replace(/^https?:\/\//, '').split('/')[0].split(':')[0];
+
+  // If Render internal service name was passed without a domain suffix, append .onrender.com
+  if (cleanHost && !cleanHost.includes('.') && cleanHost !== 'localhost') {
+    url = `https://${cleanHost}.onrender.com`;
+  } else if (!url.startsWith('http://') && !url.startsWith('https://')) {
     url = `https://${url}`;
   }
+
   if (!url.endsWith('/api/v1')) {
     url = url.endsWith('/') ? `${url}api/v1` : `${url}/api/v1`;
   }

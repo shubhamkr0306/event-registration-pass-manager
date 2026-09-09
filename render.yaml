@@ -22,8 +22,9 @@ services:
         value: 7d
 
   # 2. Frontend Static Site (React 18 + Vite)
-  # Note: Static sites are served via Render's global CDN, so they cannot have a region.
-  - type: static
+  # Note: Static sites use type: web + runtime: static per Render Blueprint spec.
+  - type: web
+    runtime: static
     name: eventpass-web
     rootDir: frontend
     buildCommand: npm install && npm run build

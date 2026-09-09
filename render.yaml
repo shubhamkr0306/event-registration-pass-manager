@@ -20,18 +20,11 @@ services:
         generateValue: true
       - key: JWT_EXPIRES_IN
         value: 7d
-      - key: CLIENT_URL
-        fromService:
-          type: web
-          name: eventpass-web
-          property: host
 
   # 2. Frontend Static Site (React 18 + Vite)
-  - type: web
+  # Note: Static sites are served via Render's global CDN, so they cannot have a region.
+  - type: static
     name: eventpass-web
-    runtime: static
-    plan: free
-    region: oregon
     rootDir: frontend
     buildCommand: npm install && npm run build
     staticPublishPath: dist
@@ -45,7 +38,6 @@ services:
           type: web
           name: eventpass-api
           property: host
-          value: https://${host}/api/v1
 
 databases:
   # 3. Managed PostgreSQL Database

@@ -1,8 +1,23 @@
 import axios from 'axios';
 
+// Resolve API Base URL gracefully across local development and Render/Cloud hosts
+const resolveBaseUrl = () => {
+  const envUrl = import.meta.env.VITE_API_BASE_URL;
+  if (!envUrl) return 'http://localhost:5000/api/v1';
+
+  let url = envUrl.trim();
+  if (!url.startsWith('http://') && !url.startsWith('https://')) {
+    url = `https://${url}`;
+  }
+  if (!url.endsWith('/api/v1')) {
+    url = url.endsWith('/') ? `${url}api/v1` : `${url}/api/v1`;
+  }
+  return url;
+};
+
 // Create configured Axios instance
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api/v1',
+  baseURL: resolveBaseUrl(),
   headers: {
     'Content-Type': 'application/json',
   },

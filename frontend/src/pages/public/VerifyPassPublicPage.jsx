@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { 
   QrCode, 
   Search, 
@@ -11,8 +11,12 @@ import {
   ShieldCheck, 
   RefreshCw,
   Sparkles,
-  Ticket
+  Ticket,
+  Camera,
+  CameraOff,
+  ScanLine
 } from 'lucide-react';
+import { Html5Qrcode } from 'html5-qrcode';
 import { verifyPassApi, checkInPassApi } from '@/services/passService';
 import { useAuth } from '@/context/AuthContext';
 
@@ -25,11 +29,74 @@ export default function VerifyPassPublicPage() {
   const [checkInLoading, setCheckInLoading] = useState(false);
   const [checkInSuccess, setCheckInSuccess] = useState('');
 
+  // Live Camera Scanner State
+  const [cameraActive, setCameraActive] = useState(false);
+  const [cameraError, setCameraError] = useState('');
+  const qrScannerRef = useRef(null);
+
+  // Stop camera on unmount
+  useEffect(() => {
+    return () => {
+      if (qrScannerRef.current) {
+        if (qrScannerRef.current.isScanning) {
+          qrScannerRef.current.stop().catch(() => {});
+        }
+        qrScannerRef.current.clear();
+      }
+    };
+  }, []);
+
+  const startCamera = () => {
+    setCameraError('');
+    setCameraActive(true);
+
+    setTimeout(async () => {
+      try {
+        const scanner = new Html5Qrcode('public-qr-reader');
+        qrScannerRef.current = scanner;
+
+        await scanner.start(
+          { facingMode: 'environment' },
+          {
+            fps: 10,
+            qrbox: { width: 240, height: 240 },
+          },
+          (decodedText) => {
+            // Captured QR code successfully!
+            stopCamera();
+            setPassCodeInput(decodedText);
+            executeVerify(decodedText);
+          },
+          () => {}
+        );
+      } catch (err) {
+        console.error('Camera start error:', err);
+        setCameraError(err.message || 'Unable to access device camera. Please check browser camera permissions.');
+        setCameraActive(false);
+      }
+    }, 150);
+  };
+
+  const stopCamera = async () => {
+    if (qrScannerRef.current) {
+      try {
+        if (qrScannerRef.current.isScanning) {
+          await qrScannerRef.current.stop();
+        }
+        qrScannerRef.current.clear();
+      } catch (err) {
+        console.warn('Camera stop notice:', err);
+      }
+      qrScannerRef.current = null;
+    }
+    setCameraActive(false);
+  };
+
   // Handle pass verification search
-  const handleVerify = async (e) => {
-    if (e) e.preventDefault();
-    if (!passCodeInput.trim()) {
-      setErrorMsg('Please enter a pass code or paste QR code data.');
+  const executeVerify = async (tokenOrCode) => {
+    const codeToVerify = tokenOrCode || passCodeInput;
+    if (!codeToVerify || !codeToVerify.trim()) {
+      setErrorMsg('Please enter a pass code or scan a QR code.');
       return;
     }
 
@@ -39,16 +106,21 @@ export default function VerifyPassPublicPage() {
       setResult(null);
       setCheckInSuccess('');
 
-      const res = await verifyPassApi(passCodeInput.trim());
+      const res = await verifyPassApi(codeToVerify.trim());
       setResult(res);
     } catch (err) {
       setResult(null);
       setErrorMsg(
-        err.response?.data?.message || 'Verification failed. Pass code not recognized.'
+        err.response?.data?.message || 'Verification failed. Pass code or QR token not recognized.'
       );
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleVerify = (e) => {
+    if (e) e.preventDefault();
+    executeVerify();
   };
 
   // Handle Gatekeeper / Organizer attendee check-in
@@ -114,8 +186,70 @@ export default function VerifyPassPublicPage() {
       )}
 
       {/* Verification Input Card */}
-      <div className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 space-y-4">
+      <div className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 space-y-5">
         
+        {/* Camera Scanner Header & Toggle */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100 dark:border-slate-800">
+          <div>
+            <h2 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              <ScanLine className="h-4 w-4 text-teal-600" />
+              <span>Camera QR Scanner</span>
+            </h2>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+              Scan attendee passes live using your device camera or webcam.
+            </p>
+          </div>
+
+          {!cameraActive ? (
+            <button
+              type="button"
+              onClick={startCamera}
+              className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-teal-600 text-white text-xs font-semibold hover:bg-teal-700 shadow-sm transition-all hover:scale-[1.02]"
+            >
+              <Camera className="h-4 w-4" />
+              <span>Open Camera Scanner</span>
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={stopCamera}
+              className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-rose-600 text-white text-xs font-semibold hover:bg-rose-700 shadow-sm transition-all"
+            >
+              <CameraOff className="h-4 w-4" />
+              <span>Stop Camera</span>
+            </button>
+          )}
+        </div>
+
+        {/* Live Camera Viewfinder Box */}
+        {cameraActive && (
+          <div className="space-y-3">
+            <div className="relative overflow-hidden rounded-2xl bg-black max-w-xs mx-auto aspect-square border-2 border-teal-500 shadow-md">
+              <div id="public-qr-reader" className="w-full h-full" />
+              
+              {/* Scan Reticle Overlay */}
+              <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                <div className="w-44 h-44 border-2 border-dashed border-teal-400 rounded-2xl animate-pulse" />
+              </div>
+            </div>
+
+            <p className="text-center text-[11px] text-slate-500 dark:text-slate-400">
+              Hold the pass QR code in front of the lens to verify automatically.
+            </p>
+          </div>
+        )}
+
+        {/* Camera Permission / Hardware Alert */}
+        {cameraError && (
+          <div className="p-3.5 rounded-xl border border-rose-200 bg-rose-50 text-xs text-rose-800 dark:border-rose-900/50 dark:bg-rose-950/40 dark:text-rose-300 flex items-start gap-2.5">
+            <AlertCircle className="h-4 w-4 shrink-0 text-rose-600 mt-0.5" />
+            <div>
+              <p className="font-bold">Camera Permission Error</p>
+              <p className="mt-0.5">{cameraError}</p>
+            </div>
+          </div>
+        )}
+
         <form onSubmit={handleVerify} className="space-y-4">
           <div className="space-y-1.5">
             <label 

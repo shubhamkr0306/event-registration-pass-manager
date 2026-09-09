@@ -2,5 +2,16 @@
   "name": "shnoor-event-registration-pass-manager",
   "version": "1.0.0",
   "private": true,
-  "description": "Event Registration and Pass Manager platform"
+  "description": "Event Registration and Pass Manager platform",
+  "scripts": {
+    "build": "npm run install:all && npm run build:frontend",
+    "build:frontend": "cd frontend && npm install && npm run build",
+    "install:backend": "cd backend && npm install",
+    "install:frontend": "cd frontend && npm install",
+    "install:all": "npm run install:backend && npm run install:frontend",
+    "start": "cd backend && npm start",
+    "dev:backend": "cd backend && npm run dev",
+    "dev:frontend": "cd frontend && npm run dev",
+    "seed": "cd backend && npm run seed"
+  }
 }

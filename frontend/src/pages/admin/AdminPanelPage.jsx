@@ -19,7 +19,8 @@ import {
   Percent,
   IndianRupee,
   Sparkles,
-  Calendar
+  Calendar,
+  Download
 } from 'lucide-react';
 import { 
   getAdminStatsApi, 
@@ -30,6 +31,7 @@ import {
   getAdminAnalyticsApi,
   checkInPassApi
 } from '@/services/adminService';
+import { exportAttendeesToCSV } from '@/utils/csvExport';
 import { useAuth } from '@/context/AuthContext';
 
 export default function AdminPanelPage() {
@@ -548,6 +550,18 @@ export default function AdminPanelPage() {
                   <option value="USED">Admitted (USED)</option>
                   <option value="CANCELLED">Cancelled</option>
                 </select>
+
+                {/* Export CSV Button */}
+                <button
+                  type="button"
+                  onClick={() => exportAttendeesToCSV(attendeesList, 'admin_system_attendees')}
+                  disabled={attendeesList.length === 0}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl border border-teal-200 bg-teal-50/70 text-teal-700 hover:bg-teal-100 hover:border-teal-300 dark:border-teal-800 dark:bg-teal-950/40 dark:text-teal-300 dark:hover:bg-teal-900/60 shadow-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  title="Download attendee participant list as CSV spreadsheet"
+                >
+                  <Download className="h-3.5 w-3.5" />
+                  <span>Export CSV</span>
+                </button>
               </div>
             </div>
 

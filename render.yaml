@@ -1,0 +1,56 @@
+services:
+  # 1. Backend Web Service (Node.js API)
+  - type: web
+    name: eventpass-api
+    runtime: node
+    plan: free
+    region: oregon
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: eventpass-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: 7d
+      - key: CLIENT_URL
+        fromService:
+          type: web
+          name: eventpass-web
+          property: host
+
+  # 2. Frontend Static Site (React 18 + Vite)
+  - type: web
+    name: eventpass-web
+    runtime: static
+    plan: free
+    region: oregon
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: VITE_API_BASE_URL
+        fromService:
+          type: web
+          name: eventpass-api
+          property: host
+          value: https://${host}/api/v1
+
+databases:
+  # 3. Managed PostgreSQL Database
+  - name: eventpass-db
+    plan: free
+    region: oregon
+    databaseName: shnoor_event_db
+    user: shnoor_user

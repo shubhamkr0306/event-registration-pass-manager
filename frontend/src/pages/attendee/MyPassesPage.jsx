@@ -9,7 +9,11 @@ import {
   CheckCircle2, 
   AlertCircle, 
   QrCode,
-  Tag
+  Tag,
+  Search,
+  Clock,
+  Sparkles,
+  Filter
 } from 'lucide-react';
 import { getMyPassesApi, cancelPassApi } from '@/services/passService';
 import { useAuth } from '@/context/AuthContext';
@@ -21,6 +25,8 @@ export default function MyPassesPage() {
   const [loading, setLoading] = useState(true);
   const [notification, setNotification] = useState(null);
   const [selectedPassForQR, setSelectedPassForQR] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('ALL');
 
   const fetchPasses = async () => {
     try {
@@ -63,6 +69,28 @@ export default function MyPassesPage() {
     }
   };
 
+  const totalPasses = passesList.length;
+  const activePasses = passesList.filter((p) => p.status === 'ACTIVE').length;
+  const usedPasses = passesList.filter((p) => p.status === 'USED').length;
+
+  const filteredPasses = passesList.filter((p) => {
+    if (statusFilter !== 'ALL' && p.status !== statusFilter) {
+      return false;
+    }
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim();
+      const titleMatch = p.event_title?.toLowerCase().includes(q);
+      const codeMatch = p.pass_code?.toLowerCase().includes(q);
+      const venueMatch = p.venue?.toLowerCase().includes(q);
+      const locationMatch = p.location?.toLowerCase().includes(q);
+      const catMatch = p.category?.toLowerCase().includes(q);
+      if (!titleMatch && !codeMatch && !venueMatch && !locationMatch && !catMatch) {
+        return false;
+      }
+    }
+    return true;
+  });
+
   return (
     <div className="space-y-6 py-4">
       
@@ -70,7 +98,7 @@ export default function MyPassesPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-4 dark:border-slate-800">
         <div>
           <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">
-            My Digital Passes
+            Attendee Passes Dashboard
           </h1>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
             Registered passes for <span className="font-semibold text-teal-600 dark:text-teal-400">{user?.name}</span>. Present these at the venue check-in desk.
@@ -86,6 +114,42 @@ export default function MyPassesPage() {
           <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
           <span>Refresh</span>
         </button>
+      </div>
+
+      {/* 3-Card KPI Summary Ribbon */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900 shadow-sm space-y-1">
+          <div className="flex items-center justify-between text-slate-500 dark:text-slate-400">
+            <span className="text-xs font-medium uppercase tracking-wider">Total Passes</span>
+            <Ticket className="h-4 w-4 text-teal-600" />
+          </div>
+          <p className="text-2xl font-bold text-slate-900 dark:text-white">
+            {totalPasses}
+          </p>
+          <p className="text-[11px] text-slate-400">All registered event tickets</p>
+        </div>
+
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900 shadow-sm space-y-1">
+          <div className="flex items-center justify-between text-slate-500 dark:text-slate-400">
+            <span className="text-xs font-medium uppercase tracking-wider">Active & Upcoming</span>
+            <Sparkles className="h-4 w-4 text-emerald-600" />
+          </div>
+          <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
+            {activePasses}
+          </p>
+          <p className="text-[11px] text-slate-400">Awaiting venue admission</p>
+        </div>
+
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900 shadow-sm space-y-1">
+          <div className="flex items-center justify-between text-slate-500 dark:text-slate-400">
+            <span className="text-xs font-medium uppercase tracking-wider">Events Attended</span>
+            <CheckCircle2 className="h-4 w-4 text-blue-600" />
+          </div>
+          <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+            {usedPasses}
+          </p>
+          <p className="text-[11px] text-slate-400">Checked-in and completed</p>
+        </div>
       </div>
 
       {/* Notification Banner */}
@@ -115,6 +179,43 @@ export default function MyPassesPage() {
         </div>
       )}
 
+      {/* Toolbar: Search & Filter Tabs */}
+      {passesList.length > 0 && (
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-2xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900 shadow-sm">
+          <div className="relative flex-1 max-w-sm">
+            <Search className="h-3.5 w-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Search passes by event, code, or venue..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-8 pr-3 py-1.5 text-xs rounded-xl border border-slate-300 bg-white dark:border-slate-700 dark:bg-slate-800 dark:text-white focus:outline-none focus:border-teal-500"
+            />
+          </div>
+
+          <div className="flex items-center gap-1.5 self-end sm:self-auto text-xs">
+            {[
+              { id: 'ALL', label: `All (${totalPasses})` },
+              { id: 'ACTIVE', label: `Active (${activePasses})` },
+              { id: 'USED', label: `Checked In (${usedPasses})` },
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setStatusFilter(tab.id)}
+                className={`px-3 py-1.5 rounded-xl font-medium transition-colors ${
+                  statusFilter === tab.id
+                    ? 'bg-teal-600 text-white shadow-sm'
+                    : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Passes Grid */}
       {loading ? (
         <div className="py-20 text-center text-xs text-slate-400">
@@ -138,9 +239,25 @@ export default function MyPassesPage() {
             <span>Browse Events →</span>
           </Link>
         </div>
+      ) : filteredPasses.length === 0 ? (
+        <div className="py-12 text-center rounded-2xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900 shadow-sm space-y-2">
+          <p className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+            No passes found matching your filter criteria.
+          </p>
+          <button
+            type="button"
+            onClick={() => {
+              setSearchQuery('');
+              setStatusFilter('ALL');
+            }}
+            className="text-xs text-teal-600 hover:underline"
+          >
+            Reset Filters
+          </button>
+        </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {passesList.map((p) => (
+          {filteredPasses.map((p) => (
             <div
               key={p.id}
               className="relative flex flex-col justify-between rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900"

@@ -4,7 +4,6 @@ import { AuthProvider } from '@/context/AuthContext';
 
 // Layouts
 import MainLayout from '@/layouts/MainLayout';
-import DashboardLayout from '@/layouts/DashboardLayout';
 
 // Route Guards
 import AdminRoute from '@/components/common/AdminRoute';
@@ -37,7 +36,7 @@ export default function App() {
       <BrowserRouter>
         <Routes>
           
-          {/* Public & Attendee Layout Routes */}
+          {/* Unified Application Layout (All Roles: Admin, Organizer, Attendee, Public) */}
           <Route element={<MainLayout />}>
             <Route path="/" element={<HomePage />} />
             <Route path="/events" element={<EventsPage />} />
@@ -56,22 +55,48 @@ export default function App() {
                 </AdminRoute>
               } 
             />
-          </Route>
 
-          {/* Organizer Console / Dashboard Layout Routes (Guarded by OrganizerRoute) */}
-          <Route 
-            path="/dashboard" 
-            element={
-              <OrganizerRoute>
-                <DashboardLayout />
-              </OrganizerRoute>
-            }
-          >
-            <Route index element={<DashboardOverviewPage />} />
-            <Route path="events" element={<ManageEventsPage />} />
-            <Route path="scanner" element={<LiveScannerPage />} />
-            <Route path="attendees" element={<EventAttendeesPage />} />
-            <Route path="analytics" element={<EventAnalyticsPage />} />
+            {/* Organizer Console Routes (Guarded by OrganizerRoute, Unified in MainLayout) */}
+            <Route 
+              path="/dashboard" 
+              element={
+                <OrganizerRoute>
+                  <DashboardOverviewPage />
+                </OrganizerRoute>
+              } 
+            />
+            <Route 
+              path="/dashboard/events" 
+              element={
+                <OrganizerRoute>
+                  <ManageEventsPage />
+                </OrganizerRoute>
+              } 
+            />
+            <Route 
+              path="/dashboard/scanner" 
+              element={
+                <OrganizerRoute>
+                  <LiveScannerPage />
+                </OrganizerRoute>
+              } 
+            />
+            <Route 
+              path="/dashboard/attendees" 
+              element={
+                <OrganizerRoute>
+                  <EventAttendeesPage />
+                </OrganizerRoute>
+              } 
+            />
+            <Route 
+              path="/dashboard/analytics" 
+              element={
+                <OrganizerRoute>
+                  <EventAnalyticsPage />
+                </OrganizerRoute>
+              } 
+            />
           </Route>
 
           {/* Fallback wildcard redirect */}

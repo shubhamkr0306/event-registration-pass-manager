@@ -4,9 +4,13 @@ import {
   Home,
   Ticket, 
   Calendar, 
+  CalendarDays,
   QrCode, 
   LayoutDashboard, 
   ShieldCheck, 
+  ScanLine,
+  Users,
+  BarChart3,
   X, 
   ChevronLeft,
   ChevronRight,
@@ -19,14 +23,36 @@ export default function AppSidebar({ isOpen, onClose, isCollapsed, onToggleColla
   const location = useLocation();
   const { isAuthenticated, isOrganizer, isAdmin } = useAuth();
 
-  // Navigation link configuration (Role-based: Verify Pass is for Organizers & Admins only)
+  // Navigation link configuration (Role-based: Clean hierarchy per role)
   const navLinks = [
-    { name: 'Home', path: '/', icon: Home },
-    { name: 'Explore Events', path: '/events', icon: Calendar },
-    ...(isAuthenticated && !isAdmin ? [{ name: 'My Passes', path: '/my-passes', icon: Ticket }] : []),
-    ...((isOrganizer || isAdmin) ? [{ name: 'Verify Pass', path: '/verify-pass', icon: QrCode }] : []),
-    ...(isOrganizer && !isAdmin ? [{ name: 'Organizer Hub', path: '/dashboard', icon: LayoutDashboard }] : []),
-    ...(isAdmin ? [{ name: 'Admin Console', path: '/admin', icon: ShieldCheck }] : []),
+    // 1. ADMIN Navigation
+    ...(isAdmin ? [
+      { name: 'Admin Console', path: '/admin', icon: ShieldCheck },
+      { name: 'Verify Pass', path: '/verify-pass', icon: ScanLine },
+      { name: 'Explore Events', path: '/events', icon: Calendar },
+    ] : []),
+
+    // 2. ORGANIZER Navigation (All Organizer tools in one place, exactly like Admin)
+    ...(isOrganizer && !isAdmin ? [
+      { name: 'Overview', path: '/dashboard', icon: LayoutDashboard },
+      { name: 'Manage Events', path: '/dashboard/events', icon: CalendarDays },
+      { name: 'Live QR Scanner', path: '/dashboard/scanner', icon: ScanLine },
+      { name: 'Attendees & Check-In', path: '/dashboard/attendees', icon: Users },
+      { name: 'Event Analytics', path: '/dashboard/analytics', icon: BarChart3 },
+      { name: 'Explore Events', path: '/events', icon: Calendar },
+    ] : []),
+
+    // 3. ATTENDEE Navigation (Clean attendee experience)
+    ...(isAuthenticated && !isAdmin && !isOrganizer ? [
+      { name: 'My Passes', path: '/my-passes', icon: Ticket },
+      { name: 'Explore Events', path: '/events', icon: Calendar },
+    ] : []),
+
+    // 4. PUBLIC (Logged out visitors)
+    ...(!isAuthenticated ? [
+      { name: 'Home', path: '/', icon: Home },
+      { name: 'Explore Events', path: '/events', icon: Calendar },
+    ] : []),
   ];
 
   const handleLinkClick = () => {
@@ -66,10 +92,10 @@ export default function AppSidebar({ isOpen, onClose, isCollapsed, onToggleColla
           {(!isCollapsed || isOpen) ? (
             <>
               <Link 
-                to="/" 
+                to={isAdmin ? '/admin' : isOrganizer ? '/dashboard' : '/'} 
                 onClick={handleLinkClick}
                 className="flex items-center gap-2.5 overflow-hidden"
-                title="EventPass Home"
+                title={isAdmin ? "Admin Console" : isOrganizer ? "Organizer Overview" : "EventPass Home"}
               >
                 <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-teal-600 text-white shadow-sm shadow-teal-500/20">
                   <Ticket className="h-5 w-5" />

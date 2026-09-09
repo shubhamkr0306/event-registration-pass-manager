@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
 import { 
   Calendar, 
   Ticket, 
@@ -21,6 +21,15 @@ import { getPublicEventsApi } from '@/services/eventService';
 
 export default function HomePage() {
   const { isAuthenticated, isOrganizer, isAdmin, user } = useAuth();
+
+  // If Organizer or Admin lands on HomePage, automatically redirect to their primary dashboard
+  if (isOrganizer) {
+    return <Navigate to="/dashboard" replace />;
+  }
+  if (isAdmin) {
+    return <Navigate to="/admin" replace />;
+  }
+
   const [featuredEvents, setFeaturedEvents] = useState([]);
   const [loading, setLoading] = useState(true);
 

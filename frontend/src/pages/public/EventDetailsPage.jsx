@@ -11,11 +11,13 @@ import {
   Clock, 
   Shield, 
   Loader2,
-  Tag
+  Tag,
+  QrCode
 } from 'lucide-react';
 import { getEventDetailsApi } from '@/services/eventService';
-import { bookPassApi } from '@/services/passService';
+import { bookPassApi, getMyPassesApi } from '@/services/passService';
 import { useAuth } from '@/context/AuthContext';
+import PassQRModal from '@/components/pass/PassQRModal';
 
 export default function EventDetailsPage() {
   const { id } = useParams();
@@ -26,6 +28,8 @@ export default function EventDetailsPage() {
   const [loading, setLoading] = useState(true);
   const [bookingLoading, setBookingLoading] = useState(false);
   const [bookingResult, setBookingResult] = useState(null);
+  const [existingPass, setExistingPass] = useState(null);
+  const [showQRModal, setShowQRModal] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
   const fetchDetails = async () => {
@@ -34,6 +38,23 @@ export default function EventDetailsPage() {
       const data = await getEventDetailsApi(id);
       if (data.success) {
         setEvent(data.event);
+      }
+
+      // Check if logged-in attendee already has an active pass for this event
+      if (isAuthenticated) {
+        try {
+          const myPassesRes = await getMyPassesApi();
+          if (myPassesRes.success && Array.isArray(myPassesRes.passes)) {
+            const found = myPassesRes.passes.find(
+              (p) => p.event_id === parseInt(id, 10) && p.status !== 'CANCELLED'
+            );
+            if (found) {
+              setExistingPass(found);
+            }
+          }
+        } catch (passErr) {
+          console.warn('Could not load user passes check:', passErr);
+        }
       }
     } catch (err) {
       setErrorMessage(err.response?.data?.message || 'Failed to load event details.');
@@ -44,7 +65,7 @@ export default function EventDetailsPage() {
 
   useEffect(() => {
     fetchDetails();
-  }, [id]);
+  }, [id, isAuthenticated]);
 
   const handleBookPass = async () => {
     if (!isAuthenticated) {
@@ -60,6 +81,7 @@ export default function EventDetailsPage() {
       const res = await bookPassApi(event.id);
       if (res.success) {
         setBookingResult(res.pass);
+        setExistingPass(res.pass);
         // Refresh event seats count
         fetchDetails();
       }
@@ -214,22 +236,38 @@ export default function EventDetailsPage() {
           {/* Registration / Booking Section */}
           <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
             
-            {/* Booking Result Success Banner */}
-            {bookingResult ? (
-              <div className="p-4 rounded-xl border border-emerald-200 bg-emerald-50 dark:border-emerald-900/50 dark:bg-emerald-950/40 space-y-3">
-                <div className="flex items-center gap-2 text-emerald-800 dark:text-emerald-200 text-xs font-bold">
-                  <CheckCircle2 className="h-5 w-5 text-emerald-600" />
-                  <span>Your Digital Pass Has Been Issued!</span>
+            {/* Booking Result or Existing Registration Banner */}
+            {existingPass || bookingResult ? (
+              <div className="p-5 rounded-2xl border border-emerald-200 bg-emerald-50/70 dark:border-emerald-900/50 dark:bg-emerald-950/30 space-y-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 text-emerald-800 dark:text-emerald-200 text-xs font-bold">
+                    <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+                    <span>You are officially registered for this event!</span>
+                  </div>
+                  <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-200">
+                    {(existingPass || bookingResult).status} PASS
+                  </span>
                 </div>
-                <div className="text-xs text-emerald-700 dark:text-emerald-300">
-                  Unique Pass Code: <strong className="font-mono">{bookingResult.pass_code}</strong>
-                </div>
-                <div>
+
+                <p className="text-xs text-emerald-700 dark:text-emerald-300">
+                  Unique Pass Code: <strong className="font-mono font-bold text-slate-900 dark:text-white">{(existingPass || bookingResult).pass_code}</strong>. Present your QR code at the venue gate for instant check-in.
+                </p>
+
+                <div className="flex flex-wrap items-center gap-2.5 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => setShowQRModal(true)}
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-teal-600 text-white text-xs font-semibold hover:bg-teal-700 shadow-sm transition-colors"
+                  >
+                    <QrCode className="h-4 w-4" />
+                    <span>View Pass QR Code</span>
+                  </button>
+
                   <Link
                     to="/my-passes"
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-semibold hover:bg-emerald-700 transition-colors"
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl border border-slate-300 bg-white dark:border-slate-700 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-semibold hover:bg-slate-50 transition-colors"
                   >
-                    <span>View in My Passes →</span>
+                    <span>Go to My Passes →</span>
                   </Link>
                 </div>
               </div>
@@ -296,6 +334,15 @@ export default function EventDetailsPage() {
         </div>
 
       </div>
+
+      {/* Pop-up Modal to View & Download Pass QR Code */}
+      {showQRModal && (existingPass || bookingResult) && (
+        <PassQRModal
+          pass={existingPass || bookingResult}
+          attendeeName={user?.name || 'Attendee'}
+          onClose={() => setShowQRModal(false)}
+        />
+      )}
 
     </div>
   );

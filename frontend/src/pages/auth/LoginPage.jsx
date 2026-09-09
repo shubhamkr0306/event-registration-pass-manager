@@ -36,10 +36,12 @@ export default function LoginPage() {
     setIsSubmitting(false);
 
     if (result.success) {
-      if (result.user.role === 'ORGANIZER') {
+      if (result.user.role === 'ADMIN') {
+        navigate('/admin');
+      } else if (result.user.role === 'ORGANIZER') {
         navigate('/dashboard');
       } else {
-        navigate('/events');
+        navigate('/my-passes');
       }
     } else {
       setErrorMessage(result.message);

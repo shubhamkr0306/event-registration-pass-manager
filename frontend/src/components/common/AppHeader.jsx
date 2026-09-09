@@ -27,7 +27,10 @@ export default function AppHeader({ onOpenSidebar, isCollapsed, onToggleCollapse
       <div className="flex w-full items-center justify-between lg:hidden">
         
         {/* Left Side: Brand Logo */}
-        <Link to="/" className="flex items-center gap-2">
+        <Link 
+          to={isAdmin ? '/admin' : isOrganizer ? '/dashboard' : '/'} 
+          className="flex items-center gap-2"
+        >
           <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-teal-600 text-white shadow-sm shadow-teal-500/20">
             <Ticket className="h-4 w-4" />
           </div>
@@ -81,20 +84,27 @@ export default function AppHeader({ onOpenSidebar, isCollapsed, onToggleCollapse
       {/* --- DESKTOP VIEW: Clean Context Breadcrumbs on Left, Profile on Right --- */}
       <div className="hidden lg:flex w-full items-center justify-between">
         
-        {/* Left Side: Clean context breadcrumb (No orphan hamburger clashing with sidebar) */}
+        {/* Left Side: Clean context breadcrumb */}
         <div className="flex items-center gap-2">
           <span className="text-xs font-semibold tracking-wider uppercase text-slate-400 dark:text-slate-500">
-            EventPass
+            {isAdmin ? 'Admin Console' : isOrganizer ? 'Organizer Hub' : 'EventPass'}
           </span>
           <span className="text-slate-300 dark:text-slate-700">/</span>
           <span className="text-xs font-medium text-slate-600 dark:text-slate-300">
             {location.pathname === '/' ? 'Home' : 
+             location.pathname === '/admin' ? 'System Overview' :
+             location.pathname === '/dashboard' ? 'Overview' :
+             location.pathname === '/dashboard/events' ? 'Manage Events' :
+             location.pathname === '/dashboard/scanner' ? 'Live QR Scanner' :
+             location.pathname === '/dashboard/attendees' ? 'Attendees & Check-In' :
+             location.pathname === '/dashboard/analytics' ? 'Event Analytics' :
+             location.pathname.startsWith('/events/') ? 'Event Details' :
              location.pathname.startsWith('/events') ? 'Explore Events' : 
              location.pathname === '/my-passes' ? 'My Passes' :
              location.pathname === '/verify-pass' ? 'Verify Pass' :
              location.pathname === '/login' ? 'Sign In' :
              location.pathname === '/register' ? 'Register' :
-             'Public Portal'}
+             'Portal'}
           </span>
         </div>
 
